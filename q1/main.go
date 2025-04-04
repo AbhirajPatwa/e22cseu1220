@@ -18,7 +18,6 @@ type Response struct {
 var state []int
 
 func main() {
-	windowSize := 10
 	e := echo.New()
 
 	e.GET("/numbers/:numberId", avgCalc)
@@ -26,7 +25,29 @@ func main() {
 	e.Logger.Fatal(e.Start(":8080"))
 }
 
+func numsWindow(arr []int, window int) []int {
+	if len(arr) <= window {
+		return arr
+	} else {
+		return arr[len(arr)-10:]
+	}
+}
+
+func uniqueNums(arr []int) []int {
+	seen := make(map[int]bool)
+	var result []int
+	for _, num := range arr {
+		if _, exists := seen[num]; !exists {
+			result = append(result, num)
+			seen[num] = true
+		}
+	}
+
+	return result
+}
+
 func avgCalc(c echo.Context) error {
+	windowSize := 10
 	var res Response
 	res.windowPrevState = state
 
@@ -56,4 +77,14 @@ func avgCalc(c echo.Context) error {
 	_ = json.Unmarshal(body, &numbers)
 	res.numbers = numbers
 
+	numbers = uniqueNums(numbers)
+	numbers = numsWindow(numbers, windowSize)
+	avg := 0.0
+	for _, i := range numbers {
+		avg += float64(i)
+		avg /= float64(len(numbers))
+	}
+
+	res.avg = avg
+	return c.JSON(http.StatusOK, res)
 }
